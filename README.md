@@ -21,13 +21,18 @@ npm run build        # static output → dist/
 npm run preview      # preview the production build locally
 ```
 
-## Deploy to Cloudflare Pages
+## Deploy to Cloudflare
 
-- **Framework preset:** Vite (or "None")
-- **Build command:** `npm run build`
-- **Build output directory:** `dist`
+Deploys as a **static-assets Worker**. The build command is `npm run build`
+(output `dist/`), and [`wrangler.jsonc`](wrangler.jsonc) serves `dist/` with
+`single-page-application` not-found handling, so client routes fall back to
+`index.html` — no `_redirects` file needed.
 
-`public/_redirects` already routes all paths back to `index.html` for the SPA.
+`npx wrangler deploy` (the configured deploy command) picks this up automatically.
+
+> Deploying to Cloudflare **Pages** instead? Use build command `npm run build`,
+> output dir `dist`, and add a `public/_redirects` containing `/*  /index.html  200`.
+> (Don't ship that file on the Workers path — its rule is rejected there.)
 
 ## The 90-second demo
 

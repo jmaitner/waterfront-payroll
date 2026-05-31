@@ -2,11 +2,11 @@
 // West Michigan deck / seawall / dock crew + active jobs.
 
 export const SEED_WORKERS = [
-  { id: 'w_mike', name: 'Mike V.', role: 'admin' }, // owner / foreman
-  { id: 'w_bob', name: 'Bob Tisdale', role: 'crew' },
-  { id: 'w_carlos', name: 'Carlos Mendez', role: 'crew' },
-  { id: 'w_tyler', name: 'Tyler Brinks', role: 'crew' },
-  { id: 'w_jake', name: 'Jake Roelofs', role: 'crew' },
+  { id: 'w_mike', name: 'Mike V.', role: 'admin', active: true }, // owner / foreman
+  { id: 'w_bob', name: 'Bob Tisdale', role: 'crew', active: true },
+  { id: 'w_carlos', name: 'Carlos Mendez', role: 'crew', active: true },
+  { id: 'w_tyler', name: 'Tyler Brinks', role: 'crew', active: true },
+  { id: 'w_jake', name: 'Jake Roelofs', role: 'crew', active: true },
 ]
 
 // Real West Michigan coordinates so the geofence is meaningful.

@@ -6,12 +6,14 @@ import ViewToggle from './ViewToggle.jsx'
 import RosterTab from './admin/RosterTab.jsx'
 import TimesheetTab from './admin/TimesheetTab.jsx'
 import JobsTab from './admin/JobsTab.jsx'
+import CrewTab from './admin/CrewTab.jsx'
 import SettingsTab from './admin/SettingsTab.jsx'
 
 const TABS = [
   { id: 'roster', label: 'Roster', icon: '🟢' },
   { id: 'timesheet', label: 'Timesheet', icon: '🧾' },
   { id: 'jobs', label: 'Jobs', icon: '📍' },
+  { id: 'crew', label: 'Crew', icon: '👷' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
 
@@ -37,12 +39,14 @@ export default function AdminView({ view, setView }) {
               onChange={(e) => setActingUser(e.target.value)}
               className="rounded-lg bg-white px-2 py-1 text-sm font-bold text-navy"
             >
-              {state.workers.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                  {w.role === 'admin' ? ' (owner)' : ''}
-                </option>
-              ))}
+              {state.workers
+                .filter((w) => w.active !== false)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                    {w.role === 'admin' ? ' (owner)' : ''}
+                  </option>
+                ))}
             </select>
           </label>
           <ViewToggle view={view} setView={setView} />
@@ -100,6 +104,7 @@ export default function AdminView({ view, setView }) {
             {tab === 'roster' && <RosterTab state={state} />}
             {tab === 'timesheet' && <TimesheetTab state={state} />}
             {tab === 'jobs' && <JobsTab state={state} />}
+            {tab === 'crew' && <CrewTab state={state} />}
             {tab === 'settings' && <SettingsTab state={state} />}
           </div>
         </main>

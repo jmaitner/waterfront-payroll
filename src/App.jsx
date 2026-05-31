@@ -33,12 +33,14 @@ export default function App() {
             onChange={(e) => setActingUser(e.target.value)}
             className="flex-1 rounded-lg bg-white px-2 py-1.5 text-sm font-bold text-navy"
           >
-            {state.workers.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-                {w.role === 'admin' ? ' (owner)' : ''}
-              </option>
-            ))}
+            {state.workers
+              .filter((w) => w.active !== false)
+              .map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                  {w.role === 'admin' ? ' (owner)' : ''}
+                </option>
+              ))}
           </select>
           <span className="text-[10px] text-white/50">demo</span>
         </div>

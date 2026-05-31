@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../data/useStore.js'
-import { clockIn, clockOut, getOpenShift } from '../data/store.js'
+import { clockIn, clockOut, requestClockOut } from '../data/store.js'
 import { captureLocation } from '../data/geo.js'
 import { formatDuration, formatTime } from '../data/payroll.js'
 
@@ -14,6 +14,9 @@ export default function WorkerView({ acting }) {
 
   const job = open ? state.jobs.find((j) => j.id === open.jobId) : null
   const activeJobs = state.jobs.filter((j) => j.active !== false)
+  const pendingReq = open
+    ? (state.requests || []).find((r) => r.shiftId === open.id && r.status === 'pending')
+    : null
 
   async function doClockIn(jobId) {
     setPicking(false)
@@ -41,7 +44,7 @@ export default function WorkerView({ acting }) {
       <Greeting name={acting.name} />
 
       {open ? (
-        <OnClockCard open={open} job={job} busy={busy} onClockOut={doClockOut} />
+        <OnClockCard open={open} job={job} busy={busy} onClockOut={doClockOut} pendingReq={pendingReq} />
       ) : (
         <OffClockCard busy={busy} onClockIn={() => setPicking(true)} lastResult={lastResult} jobs={state.jobs} />
       )}
@@ -63,8 +66,9 @@ function Greeting({ name }) {
 }
 
 // Live-updating running timer while on the clock.
-function OnClockCard({ open, job, busy, onClockOut }) {
+function OnClockCard({ open, job, busy, onClockOut, pendingReq }) {
   const [, tick] = useState(0)
+  const [requesting, setRequesting] = useState(false)
   useEffect(() => {
     const id = setInterval(() => tick((n) => n + 1), 1000)
     return () => clearInterval(id)
@@ -98,6 +102,60 @@ function OnClockCard({ open, job, busy, onClockOut }) {
       >
         {busy === 'locating' ? 'Saving…' : 'Clock Out'}
       </button>
+
+      {pendingReq ? (
+        <div className="mt-3 rounded-xl bg-amber-400/20 px-3 py-2 text-center text-sm font-semibold text-amber-200">
+          ⏳ Sent to your foreman — requested end {formatTime(pendingReq.requestedTs)}. Waiting for approval.
+        </div>
+      ) : requesting ? (
+        <ForgotClockOutForm open={open} onDone={() => setRequesting(false)} />
+      ) : (
+        <button
+          onClick={() => setRequesting(true)}
+          className="mt-3 w-full rounded-xl bg-white/10 py-2.5 text-sm font-bold text-wave-300 active:bg-white/20"
+        >
+          Forgot to clock out earlier? →
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Worker submits the time they actually left; it goes to the admin to approve.
+function ForgotClockOutForm({ open, onDone }) {
+  const pad = (n) => String(n).padStart(2, '0')
+  const now = new Date()
+  const min = (() => {
+    const d = new Date(open.clockIn.ts)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  })()
+  const [val, setVal] = useState(
+    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
+  )
+  return (
+    <div className="mt-3 rounded-xl bg-white/10 p-3">
+      <div className="text-xs font-bold uppercase tracking-wide text-wave-300">When did you actually leave?</div>
+      <input
+        type="datetime-local"
+        value={val}
+        min={min}
+        onChange={(e) => setVal(e.target.value)}
+        className="mt-2 w-full rounded-lg bg-white px-2 py-2 text-sm font-bold text-navy"
+      />
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={() => {
+            if (val) requestClockOut(open.id, new Date(val).toISOString(), 'Forgot to clock out')
+            onDone()
+          }}
+          className="flex-1 rounded-lg bg-wave py-2 text-sm font-bold text-white active:scale-[0.98]"
+        >
+          Send to foreman
+        </button>
+        <button onClick={onDone} className="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-wave-300">
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { formatDuration, formatTime } from '../../data/payroll.js'
-import { isForgottenClockOut, editShiftTime } from '../../data/store.js'
+import { formatDuration, formatTime, formatDate } from '../../data/payroll.js'
+import { isForgottenClockOut, editShiftTime, resolveRequest } from '../../data/store.js'
 
 // Live "who's on the clock right now" board.
 export default function RosterTab({ state }) {
@@ -14,37 +14,122 @@ export default function RosterTab({ state }) {
   const worker = (id) => state.workers.find((w) => w.id === id)?.name || '—'
   const job = (id) => state.jobs.find((j) => j.id === id)?.name || '—'
   const forgot = open.filter((s) => isForgottenClockOut(s))
-
-  if (open.length === 0) {
-    return (
-      <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center">
-        <div className="text-3xl">🌙</div>
-        <div className="mt-2 font-bold text-navy">Nobody on the clock</div>
-        <div className="mt-1 text-sm text-slate-500">
-          Switch to the Crew view (top right) and clock someone in.
-        </div>
-      </div>
-    )
-  }
+  const pending = (state.requests || []).filter((r) => r.status === 'pending')
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-bold uppercase tracking-wide text-slate-500">
-          On the clock — {open.length}
-        </div>
-        {forgot.length > 0 && (
-          <div className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
-            ⚠ {forgot.length} likely forgot to clock out
+      {pending.length > 0 && (
+        <ApprovalQueue requests={pending} state={state} worker={worker} job={job} />
+      )}
+
+      {open.length === 0 ? (
+        <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center">
+          <div className="text-3xl">🌙</div>
+          <div className="mt-2 font-bold text-navy">Nobody on the clock</div>
+          <div className="mt-1 text-sm text-slate-500">
+            Switch to the Crew view (top right) and clock someone in.
           </div>
-        )}
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              On the clock — {open.length}
+            </div>
+            {forgot.length > 0 && (
+              <div className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
+                ⚠ {forgot.length} likely forgot to clock out
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            {open.map((s) => (
+              <RosterCard key={s.id} shift={s} workerName={worker(s.workerId)} jobName={job(s.jobId)} settings={state.settings} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Worker-submitted clock-out corrections awaiting the foreman's call.
+function ApprovalQueue({ requests, state, worker, job }) {
+  return (
+    <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+      <div className="text-sm font-extrabold uppercase tracking-wide text-amber-800">
+        ⏳ {requests.length} clock-out request{requests.length !== 1 ? 's' : ''} to review
+      </div>
+      <div className="mt-3 flex flex-col gap-3">
+        {requests.map((r) => {
+          const shift = state.shifts.find((s) => s.id === r.shiftId)
+          return (
+            <RequestRow
+              key={r.id}
+              request={r}
+              shift={shift}
+              workerName={worker(r.workerId)}
+              jobName={shift ? job(shift.jobId) : '—'}
+              adminName={state.settings.adminName}
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function RequestRow({ request, shift, workerName, jobName, adminName }) {
+  const [overriding, setOverriding] = useState(false)
+  const [val, setVal] = useState(toLocalInput(request.requestedTs))
+  if (!shift) return null
+  const hours = shift.clockIn?.ts
+    ? ((new Date(request.requestedTs) - new Date(shift.clockIn.ts)) / 3600000).toFixed(2)
+    : '—'
+
+  return (
+    <div className="rounded-xl bg-white p-3 shadow-sm">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-base font-extrabold text-navy">{workerName}</div>
+          <div className="text-xs text-slate-500">{jobName}</div>
+          <div className="mt-1 text-xs text-slate-600">
+            In {formatTime(shift.clockIn.ts)} ({formatDate(shift.clockIn.ts)}) → requests out{' '}
+            <span className="font-bold text-navy">{formatTime(request.requestedTs)}</span> · ~{hours} hrs
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-        {open.map((s) => (
-          <RosterCard key={s.id} shift={s} workerName={worker(s.workerId)} jobName={job(s.jobId)} settings={state.settings} />
-        ))}
-      </div>
+      {overriding ? (
+        <div className="mt-2 rounded-lg bg-slate-50 p-2">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Override clock-out time</div>
+          <input type="datetime-local" value={val} min={toLocalInput(shift.clockIn.ts)} onChange={(e) => setVal(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => resolveRequest(request.id, 'approve', new Date(val).toISOString(), adminName)}
+              className="flex-1 rounded-lg bg-navy py-2 text-sm font-bold text-white"
+            >
+              Approve at this time
+            </button>
+            <button onClick={() => setOverriding(false)} className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold text-slate-600">
+              Back
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 flex gap-2">
+          <button onClick={() => resolveRequest(request.id, 'approve', null, adminName)} className="flex-1 rounded-lg bg-green-600 py-2 text-sm font-bold text-white active:scale-[0.98]">
+            Approve
+          </button>
+          <button onClick={() => setOverriding(true)} className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700">
+            Override
+          </button>
+          <button onClick={() => resolveRequest(request.id, 'decline', null, adminName)} className="rounded-lg bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
+            Decline
+          </button>
+        </div>
+      )}
     </div>
   )
 }

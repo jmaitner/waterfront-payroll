@@ -20,6 +20,7 @@ function freshState() {
     workers: SEED_WORKERS,
     jobs: SEED_JOBS,
     shifts: [],
+    requests: [], // worker-submitted corrections awaiting admin approval
     settings: { ...SEED_SETTINGS },
     actingUserId: SEED_WORKERS.find((w) => w.role === 'crew')?.id || SEED_WORKERS[0].id,
   }
@@ -74,6 +75,18 @@ function uid(prefix) {
 
 export function getWorkers() {
   return state.workers
+}
+export function getActiveWorkers() {
+  return state.workers.filter((w) => w.active !== false)
+}
+export function getRequests() {
+  return state.requests || []
+}
+export function getPendingRequests() {
+  return (state.requests || []).filter((r) => r.status === 'pending')
+}
+export function getPendingRequestForShift(shiftId) {
+  return (state.requests || []).find((r) => r.shiftId === shiftId && r.status === 'pending') || null
 }
 export function getJobs() {
   return state.jobs
@@ -238,6 +251,122 @@ export function isForgottenClockOut(shift, now = Date.now()) {
   if (!shift || shift.clockOut || !shift.clockIn?.ts) return false
   const hours = (now - new Date(shift.clockIn.ts)) / 3600000
   return hours >= (state.settings.forgotClockOutHours || 12)
+}
+
+// Admin fixes a wrong job/site pick on an entry. Logged like a time edit, and
+// because the timesheet groups live by jobId, per-job totals + the CSV update
+// automatically the moment this commits.
+export function editShiftJob(shiftId, newJobId, by) {
+  const shift = state.shifts.find((s) => s.id === shiftId)
+  if (!shift || shift.jobId === newJobId) return
+  const name = (id) => state.jobs.find((j) => j.id === id)?.name || '—'
+  const edit = {
+    id: uid('e'),
+    field: 'job',
+    oldLabel: name(shift.jobId),
+    newLabel: name(newJobId),
+    by: by || state.settings.adminName,
+    at: new Date().toISOString(),
+  }
+  const updated = { ...shift, jobId: newJobId, edits: [...shift.edits, edit] }
+  commit({ ...state, shifts: state.shifts.map((s) => (s.id === shiftId ? updated : s)) })
+}
+
+// --- worker-submitted corrections (approval queue) -------------------------
+
+// Worker who forgot to clock out submits the end time they actually left. This
+// does NOT change the timesheet — it queues a request for the admin to approve.
+export function requestClockOut(shiftId, requestedTs, note) {
+  const shift = state.shifts.find((s) => s.id === shiftId)
+  if (!shift || shift.clockOut) return null
+  // replace any existing pending request for this shift
+  const others = (state.requests || []).filter((r) => !(r.shiftId === shiftId && r.status === 'pending'))
+  const request = {
+    id: uid('r'),
+    type: 'clockout',
+    shiftId,
+    workerId: shift.workerId,
+    requestedTs,
+    note: note || '',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  }
+  commit({ ...state, requests: [...others, request] })
+  return request
+}
+
+// Admin approves (optionally overriding the time), or declines. Approving
+// applies the clock-out through the normal edit log so it stays defensible.
+export function resolveRequest(requestId, action /* 'approve'|'decline' */, overrideTs, by) {
+  const request = (state.requests || []).find((r) => r.id === requestId)
+  if (!request || request.status !== 'pending') return
+  const author = by || state.settings.adminName
+  const resolvedAt = new Date().toISOString()
+
+  if (action === 'decline') {
+    const requests = state.requests.map((r) =>
+      r.id === requestId ? { ...r, status: 'declined', resolvedBy: author, resolvedAt } : r,
+    )
+    commit({ ...state, requests })
+    return
+  }
+
+  // approve (with optional admin override of the time)
+  const finalTs = overrideTs || request.requestedTs
+  const overridden = !!overrideTs && overrideTs !== request.requestedTs
+  let shifts = state.shifts
+  const shift = state.shifts.find((s) => s.id === request.shiftId)
+  if (shift && !shift.clockOut) {
+    const edit = {
+      id: uid('e'),
+      field: 'clockOut',
+      oldTs: null,
+      newTs: finalTs,
+      by: author,
+      at: resolvedAt,
+      note: overridden ? 'approved worker request (time overridden)' : 'approved worker clock-out request',
+    }
+    const updated = {
+      ...shift,
+      clockOut: { ts: finalTs, lat: null, lng: null, accuracy: null, gps: false, manual: true },
+      edits: [...shift.edits, edit],
+    }
+    shifts = state.shifts.map((s) => (s.id === shift.id ? updated : s))
+  }
+  const requests = state.requests.map((r) =>
+    r.id === requestId ? { ...r, status: 'approved', resolvedBy: author, resolvedAt, finalTs, overridden } : r,
+  )
+  commit({ ...state, shifts, requests })
+}
+
+// --- crew management -------------------------------------------------------
+
+export function addWorker({ name, role }) {
+  const worker = { id: uid('w'), name: name.trim(), role: role === 'admin' ? 'admin' : 'crew', active: true }
+  commit({ ...state, workers: [...state.workers, worker] })
+  return worker
+}
+
+export function setWorkerActive(workerId, active) {
+  commit({
+    ...state,
+    workers: state.workers.map((w) => (w.id === workerId ? { ...w, active } : w)),
+  })
+}
+
+// Hard-delete only when the worker has no recorded shifts; otherwise callers
+// should deactivate to preserve historical timesheets.
+export function deleteWorker(workerId) {
+  if (state.shifts.some((s) => s.workerId === workerId)) return false
+  const workers = state.workers.filter((w) => w.id !== workerId)
+  const actingUserId =
+    state.actingUserId === workerId ? workers.find((w) => w.active !== false)?.id || workers[0]?.id : state.actingUserId
+  commit({ ...state, workers, actingUserId })
+  return true
+}
+
+export function workerHasShifts(workerId) {
+  return state.shifts.some((s) => s.workerId === workerId)
 }
 
 export function updateSettings(patch) {

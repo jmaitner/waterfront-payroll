@@ -9,7 +9,7 @@ import {
   buildPayrollCSV,
   downloadCSV,
 } from '../../data/payroll.js'
-import { editShiftTime, deleteShift, addManualShift } from '../../data/store.js'
+import { editShiftTime, editShiftJob, deleteShift, addManualShift, getJobs } from '../../data/store.js'
 import PrintableSheet from './PrintableSheet.jsx'
 
 export default function TimesheetTab({ state }) {
@@ -250,11 +250,7 @@ function ShiftRow({ shift, settings }) {
         <div className="mt-2 rounded-lg bg-slate-100 px-2 py-1 text-[11px] text-slate-500">
           <span className="font-bold">Edit log:</span>
           {shift.edits.map((e) => (
-            <div key={e.id}>
-              {e.field === 'created'
-                ? `${e.by} added this entry manually (${formatDate(e.at)})`
-                : `${e.by} changed ${e.field === 'clockIn' ? 'clock-in' : 'clock-out'} from ${e.oldTs ? formatTime(e.oldTs) : '—'} → ${formatTime(e.newTs)} (${formatDate(e.at)})`}
-            </div>
+            <div key={e.id}>{describeEdit(e)}</div>
           ))}
         </div>
       )}
@@ -271,10 +267,23 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+// One-line description of an edit-log entry.
+function describeEdit(e) {
+  const when = `(${formatDate(e.at)})`
+  if (e.field === 'created') return `${e.by} added this entry manually ${when}`
+  if (e.field === 'job') return `${e.by} changed job from ${e.oldLabel} → ${e.newLabel} ${when}`
+  const which = e.field === 'clockIn' ? 'clock-in' : 'clock-out'
+  const base = `${e.by} changed ${which} from ${e.oldTs ? formatTime(e.oldTs) : '—'} → ${formatTime(e.newTs)}`
+  return `${base}${e.note ? ` — ${e.note}` : ''} ${when}`
+}
+
 function EditPanel({ shift, settings, onDone }) {
+  const jobs = getJobs()
   const [inVal, setInVal] = useState(toLocalInput(shift.clockIn.ts))
   const [outVal, setOutVal] = useState(toLocalInput(shift.clockOut?.ts))
+  const [jobId, setJobId] = useState(shift.jobId)
   function save() {
+    if (jobId !== shift.jobId) editShiftJob(shift.id, jobId, settings.adminName)
     const newIn = inVal ? new Date(inVal).toISOString() : null
     if (newIn && newIn !== shift.clockIn.ts) editShiftTime(shift.id, 'clockIn', newIn, settings.adminName)
     if (shift.clockOut) {
@@ -286,6 +295,14 @@ function EditPanel({ shift, settings, onDone }) {
   return (
     <div className="mt-3 rounded-xl bg-slate-50 p-3">
       <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Manual edit (logged)</div>
+      <label className="mt-2 block text-xs font-semibold text-slate-600">
+        Job / site
+        <select value={jobId} onChange={(e) => setJobId(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-bold text-navy">
+          {jobs.map((j) => (
+            <option key={j.id} value={j.id}>{j.name}</option>
+          ))}
+        </select>
+      </label>
       <label className="mt-2 block text-xs font-semibold text-slate-600">
         Clock in
         <input type="datetime-local" value={inVal} onChange={(e) => setInVal(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />

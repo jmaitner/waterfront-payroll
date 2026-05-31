@@ -1,0 +1,12 @@
+{
+  // Static SPA served by Cloudflare Workers static assets.
+  // No Worker script (`main`) — wrangler just uploads ./dist and serves it.
+  // `single-page-application` handling returns index.html for client routes,
+  // which replaces the Pages-style public/_redirects fallback.
+  "name": "waterfront-payroll",
+  "compatibility_date": "2025-05-31",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

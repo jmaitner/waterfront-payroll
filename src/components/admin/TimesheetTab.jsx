@@ -11,6 +11,7 @@ import {
 } from '../../data/payroll.js'
 import { editShiftTime, editShiftJob, deleteShift, addManualShift, getJobs } from '../../data/store.js'
 import PrintableSheet from './PrintableSheet.jsx'
+import PunchLocation from '../PunchLocation.jsx'
 
 export default function TimesheetTab({ state }) {
   const [offset, setOffset] = useState(0) // 0 = current period, -1 prev, +1 next
@@ -238,6 +239,15 @@ function ShiftRow({ shift, settings }) {
             {editing ? 'Close' : 'Edit'}
           </button>
         </div>
+      </div>
+
+      <div className="mt-2 space-y-0.5 rounded-lg bg-slate-50 px-2 py-1.5">
+        <PunchLocation label="Clock-in" punch={shift.clockIn} />
+        {shift.clockOut ? (
+          <PunchLocation label="Clock-out" punch={shift.clockOut} />
+        ) : (
+          <div className="text-[11px] text-green-600">Clock-out: still on the clock</div>
+        )}
       </div>
 
       {flagged && (

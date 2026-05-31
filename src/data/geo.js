@@ -2,6 +2,17 @@
 
 const EARTH_RADIUS_MI = 3958.8
 
+// Link that drops a pin on a punch's coordinates.
+export function mapsUrl(lat, lng) {
+  return `https://www.google.com/maps?q=${lat},${lng}`
+}
+
+// "43.0775, -86.1956" — fixed precision for display.
+export function formatCoords(lat, lng) {
+  if (lat == null || lng == null) return null
+  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+}
+
 // Distance between two lat/lng points in miles (haversine).
 export function distanceMiles(a, b) {
   if (!a || !b || a.lat == null || b.lat == null) return null

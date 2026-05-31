@@ -7,6 +7,7 @@ import RosterTab from './admin/RosterTab.jsx'
 import TimesheetTab from './admin/TimesheetTab.jsx'
 import JobsTab from './admin/JobsTab.jsx'
 import CrewTab from './admin/CrewTab.jsx'
+import LogTab from './admin/LogTab.jsx'
 import SettingsTab from './admin/SettingsTab.jsx'
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'timesheet', label: 'Timesheet', icon: '🧾' },
   { id: 'jobs', label: 'Jobs', icon: '📍' },
   { id: 'crew', label: 'Crew', icon: '👷' },
+  { id: 'log', label: 'Log', icon: '📜' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
 
@@ -81,12 +83,12 @@ export default function AdminView({ view, setView }) {
 
         <main className="min-w-0 flex-1">
           {/* Mobile tab bar */}
-          <div className="sticky top-0 z-10 flex gap-1 border-b border-slate-200 bg-slate-100 px-2 py-2 lg:hidden">
+          <div className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-slate-200 bg-slate-100 px-2 py-2 lg:hidden">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`relative flex-1 rounded-lg py-2 text-sm font-bold transition ${
+                className={`relative shrink-0 rounded-lg px-3 py-2 text-sm font-bold transition ${
                   tab === t.id ? 'bg-navy text-white' : 'text-slate-500'
                 }`}
               >
@@ -105,6 +107,7 @@ export default function AdminView({ view, setView }) {
             {tab === 'timesheet' && <TimesheetTab state={state} />}
             {tab === 'jobs' && <JobsTab state={state} />}
             {tab === 'crew' && <CrewTab state={state} />}
+            {tab === 'log' && <LogTab state={state} />}
             {tab === 'settings' && <SettingsTab state={state} />}
           </div>
         </main>

@@ -1,10 +1,13 @@
 import { useState } from 'react'
 
-const LOGO_URL =
+// Real asset shipped in public/. Falls back to the live site URL, then to a
+// clean inline wordmark — so the mark renders even fully offline.
+const LOGO_URL = '/logo.png'
+const LOGO_FALLBACK_URL =
   'https://waterfrontsolutionsmi.com/wp-content/uploads/2023/12/west-michigan-deck-and-stair-builders.png'
 
-// Brand mark. Tries the real logo; falls back to a clean wordmark so the demo
-// never shows a broken image (drop the real asset in later).
+// Brand mark. Tries the bundled logo, then the remote, then a wordmark so the
+// demo never shows a broken image.
 export default function Logo({ className = '', dark = false }) {
   const [failed, setFailed] = useState(false)
   if (failed) {
@@ -36,7 +39,14 @@ export default function Logo({ className = '', dark = false }) {
       src={LOGO_URL}
       alt="Waterfront Solutions"
       className={`object-contain ${className}`}
-      onError={() => setFailed(true)}
+      onError={(e) => {
+        // bundled → remote → wordmark
+        if (e.currentTarget.src.endsWith('/logo.png')) {
+          e.currentTarget.src = LOGO_FALLBACK_URL
+        } else {
+          setFailed(true)
+        }
+      }}
     />
   )
 }

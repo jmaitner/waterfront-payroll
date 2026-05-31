@@ -3,6 +3,7 @@ import { useStore } from '../data/useStore.js'
 import { setActingUser } from '../data/store.js'
 import Logo from './Logo.jsx'
 import ViewToggle from './ViewToggle.jsx'
+import DemoBanner from './DemoBanner.jsx'
 import RosterTab from './admin/RosterTab.jsx'
 import TimesheetTab from './admin/TimesheetTab.jsx'
 import JobsTab from './admin/JobsTab.jsx'
@@ -27,6 +28,7 @@ export default function AdminView({ view, setView }) {
 
   return (
     <div className="min-h-screen bg-slate-100 text-navy">
+      <DemoBanner />
       {/* Top bar */}
       <header className="flex items-center justify-between gap-3 bg-navy px-4 py-3 text-white lg:px-6">
         <div className="flex items-center gap-3">

@@ -3,6 +3,7 @@ import { useStore } from './data/useStore.js'
 import { setActingUser } from './data/store.js'
 import Logo from './components/Logo.jsx'
 import ViewToggle from './components/ViewToggle.jsx'
+import DemoBanner from './components/DemoBanner.jsx'
 import WorkerView from './components/WorkerView.jsx'
 import AdminView from './components/AdminView.jsx'
 
@@ -18,6 +19,7 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col bg-slate-100 text-navy shadow-xl sm:my-4 sm:min-h-[calc(100vh-2rem)] sm:rounded-3xl sm:overflow-hidden">
+      <DemoBanner />
       {/* Header */}
       <header className="bg-navy px-4 pt-4 pb-3 text-white" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between">

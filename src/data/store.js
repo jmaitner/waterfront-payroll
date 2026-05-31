@@ -377,8 +377,8 @@ export function updateJob(jobId, patch) {
   commit({ ...state, jobs: state.jobs.map((j) => (j.id === jobId ? { ...j, ...patch } : j)) })
 }
 
-export function addJob({ name, address }) {
-  const job = { id: uid('j'), name, address: address || '', lat: null, lng: null, active: true }
+export function addJob({ name, address, lat = null, lng = null }) {
+  const job = { id: uid('j'), name, address: address || '', lat, lng, active: true }
   commit({ ...state, jobs: [...state.jobs, job] })
   return job
 }

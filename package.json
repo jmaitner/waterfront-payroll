@@ -1,9 +1,9 @@
 {
-  "name": "waterfront-timeclock",
+  "name": "crew-clock",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Waterfront Solutions crew time clock + payroll (MVP demo)",
+  "description": "Crew time clock + payroll (MVP demo)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

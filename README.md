@@ -1,4 +1,4 @@
-# Waterfront Solutions — Crew Time Clock + Payroll (MVP)
+# Crew Clock — Crew Time Clock + Payroll (MVP)
 
 Tap-to-clock phone app that captures crew hours **automatically**, GPS-stamps
 each punch, flags out-of-range clock-ins, and exports a **payroll-ready sheet** —

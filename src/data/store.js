@@ -11,7 +11,7 @@
 import { SEED_WORKERS, SEED_JOBS, SEED_SETTINGS } from './seed.js'
 import { distanceMiles } from './geo.js'
 
-const STORAGE_KEY = 'waterfront.timeclock.v1'
+const STORAGE_KEY = 'crewclock.timeclock.v1'
 
 // --- persistence -----------------------------------------------------------
 

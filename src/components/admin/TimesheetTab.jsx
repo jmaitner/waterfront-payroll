@@ -28,7 +28,7 @@ export default function TimesheetTab({ state }) {
   function exportCSV() {
     const csv = buildPayrollCSV({ timesheet, settings: state.settings, range, jobs: state.jobs })
     const stamp = range.start.toISOString().slice(0, 10)
-    downloadCSV(`waterfront-payroll-${stamp}.csv`, csv)
+    downloadCSV(`crew-clock-payroll-${stamp}.csv`, csv)
   }
 
   return (

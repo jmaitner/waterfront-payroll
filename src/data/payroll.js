@@ -125,7 +125,7 @@ function csvCell(v) {
 
 export function buildPayrollCSV({ timesheet, settings, range, jobs }) {
   const lines = []
-  lines.push(['Waterfront Solutions — Payroll'])
+  lines.push(['Crew Clock — Payroll'])
   lines.push(['Pay Period', formatPeriod(range)])
   lines.push(['Schedule', settings.payPeriod, 'Rounding', settings.rounding === '15' ? 'Nearest 15 min' : 'None'])
   lines.push([])

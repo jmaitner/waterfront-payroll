@@ -8,7 +8,7 @@ export default function JobsTab({ state }) {
   const [adding, setAdding] = useState(false)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex max-w-2xl flex-col gap-3">
       <div className="rounded-2xl bg-wave/10 p-3 text-xs text-navy">
         <span className="font-bold">Geofence radius:</span> {state.settings.geofenceRadiusMiles} mi (set in
         Settings). A punch outside a job's radius gets flagged. Tap{' '}

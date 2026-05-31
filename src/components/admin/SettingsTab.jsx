@@ -4,7 +4,7 @@ import { updateSettings, resetDemo } from '../../data/store.js'
 export default function SettingsTab({ state }) {
   const s = state.settings
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex max-w-2xl flex-col gap-4">
       <Section title="Pay period">
         <Segmented
           value={s.payPeriod}
@@ -41,6 +41,21 @@ export default function SettingsTab({ state }) {
           <div className="w-20 text-right font-extrabold tabular-nums text-navy">
             {s.geofenceRadiusMiles.toFixed(2)} mi
           </div>
+        </div>
+      </Section>
+
+      <Section title="Forgot-to-clock-out alert" hint="Flag anyone still on the clock longer than this so a punch never runs overnight unnoticed.">
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min="6"
+            max="16"
+            step="1"
+            value={s.forgotClockOutHours}
+            onChange={(e) => updateSettings({ forgotClockOutHours: parseInt(e.target.value, 10) })}
+            className="flex-1 accent-navy"
+          />
+          <div className="w-20 text-right font-extrabold tabular-nums text-navy">{s.forgotClockOutHours} hrs</div>
         </div>
       </Section>
 

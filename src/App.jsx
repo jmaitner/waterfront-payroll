@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from './data/useStore.js'
 import { setActingUser } from './data/store.js'
 import Logo from './components/Logo.jsx'
+import ViewToggle from './components/ViewToggle.jsx'
 import WorkerView from './components/WorkerView.jsx'
 import AdminView from './components/AdminView.jsx'
 
@@ -9,6 +10,11 @@ export default function App() {
   const state = useStore()
   const [view, setView] = useState('worker') // 'worker' | 'admin'
   const acting = state.workers.find((w) => w.id === state.actingUserId)
+
+  // Admin gets a full-width desktop workspace; the crew app stays phone-framed.
+  if (view === 'admin') {
+    return <AdminView view={view} setView={setView} />
+  }
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col bg-slate-100 text-navy shadow-xl sm:my-4 sm:min-h-[calc(100vh-2rem)] sm:rounded-3xl sm:overflow-hidden">
@@ -40,27 +46,8 @@ export default function App() {
 
       {/* Body */}
       <main className="flex-1 overflow-y-auto">
-        {view === 'worker' ? <WorkerView acting={acting} /> : <AdminView />}
+        <WorkerView acting={acting} />
       </main>
-    </div>
-  )
-}
-
-function ViewToggle({ view, setView }) {
-  return (
-    <div className="flex rounded-full bg-white/10 p-0.5 text-xs font-bold">
-      <button
-        onClick={() => setView('worker')}
-        className={`rounded-full px-3 py-1.5 transition ${view === 'worker' ? 'bg-white text-navy' : 'text-white/80'}`}
-      >
-        Crew
-      </button>
-      <button
-        onClick={() => setView('admin')}
-        className={`rounded-full px-3 py-1.5 transition ${view === 'admin' ? 'bg-white text-navy' : 'text-white/80'}`}
-      >
-        Admin
-      </button>
     </div>
   )
 }

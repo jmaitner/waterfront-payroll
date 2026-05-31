@@ -45,6 +45,7 @@ export const SEED_SETTINGS = {
   payPeriodStart: anchorMonday(),
   rounding: 'none', // 'none' | '15' (nearest 15 minutes)
   geofenceRadiusMiles: 0.25,
+  forgotClockOutHours: 12, // open shift past this long = "likely forgot to clock out"
   adminName: 'Mike V.',
 }
 

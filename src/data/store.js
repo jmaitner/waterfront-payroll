@@ -201,6 +201,45 @@ export function deleteShift(shiftId) {
   commit({ ...state, shifts: state.shifts.filter((s) => s.id !== shiftId) })
 }
 
+// Admin adds an entry from scratch — for a worker who forgot to clock in at all.
+// Marked as manual + seeded with a "created" edit-log entry so it's never
+// mistaken for an auto-captured punch. clockOutTs may be null (still open).
+export function addManualShift({ workerId, jobId, clockInTs, clockOutTs, by }) {
+  if (!workerId || !jobId || !clockInTs) return null
+  const stamp = (ts) =>
+    ts ? { ts, lat: null, lng: null, accuracy: null, gps: false, manual: true } : null
+  const author = by || state.settings.adminName
+  const shift = {
+    id: uid('s'),
+    workerId,
+    jobId,
+    source: 'manual',
+    clockIn: stamp(clockInTs),
+    clockOut: stamp(clockOutTs),
+    flags: [{ type: 'manual', at: 'in', label: 'Added manually by admin' }],
+    edits: [
+      {
+        id: uid('e'),
+        field: 'created',
+        oldTs: null,
+        newTs: clockInTs,
+        by: author,
+        at: new Date().toISOString(),
+      },
+    ],
+  }
+  commit({ ...state, shifts: [...state.shifts, shift] })
+  return shift
+}
+
+// True when an open shift has run long enough that the worker likely just
+// forgot to clock out. Threshold is an admin setting (hours).
+export function isForgottenClockOut(shift, now = Date.now()) {
+  if (!shift || shift.clockOut || !shift.clockIn?.ts) return false
+  const hours = (now - new Date(shift.clockIn.ts)) / 3600000
+  return hours >= (state.settings.forgotClockOutHours || 12)
+}
+
 export function updateSettings(patch) {
   commit({ ...state, settings: { ...state.settings, ...patch } })
 }
